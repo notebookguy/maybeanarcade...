@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="theme-color" content="#e7eee4" />
+		<title>Tag Arena</title>
+		<style>
+			:root {
+				color-scheme: light;
+				--ink: #17241f;
+				--deep: #203b30;
+				--muted: #6c7d71;
+				--paper: #e7eee4;
+				--line: #c8d3c8;
+				--blue: #3695f4;
+				--red: #ef6258;
+				--gold: #f4c85c;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				min-width: 320px;
+				min-height: 100vh;
+				margin: 0;
+				padding: 22px 16px 26px;
+				color: var(--ink);
+				background-color: var(--paper);
+				background-image: linear-gradient(rgba(41, 77, 57, 0.035) 1px, transparent 1px),
+					linear-gradient(90deg, rgba(41, 77, 57, 0.035) 1px, transparent 1px);
+				background-size: 24px 24px;
+				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+			}
+
+			.game {
+				width: min(1080px, 100%);
+				margin: 0 auto;
+				animation: arrive 420ms ease-out both;
+			}
+
+			.masthead {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				gap: 16px;
+				margin-bottom: 14px;
+			}
+
+			.brand {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+			}
+
+			.brand-mark {
+				position: relative;
+				width: 38px;
+				height: 30px;
+			}
+
+			.brand-mark::before,
+			.brand-mark::after {
+				position: absolute;
+				top: 3px;
+				width: 24px;
+				height: 24px;
+				border: 3px solid var(--ink);
+				border-radius: 50%;
+				content: "";
+			}
+
+			.brand-mark::before {
+				left: 0;
+				background: var(--blue);
+			}
+
+			.brand-mark::after {
+				right: 0;
+				background: var(--red);
+			}
+
+			h1 {
+				margin: 0;
+				font-family: Georgia, "Times New Roman", serif;
+				font-size: 26px;
+				line-height: 1;
+			}
+
+			.round-label {
+				margin-top: 5px;
+				color: var(--muted);
+				font-size: 11px;
+				font-weight: 800;
+				letter-spacing: 1.4px;
+				text-transform: uppercase;
+			}
+
+			button {
+				min-height: 42px;
+				padding: 0 16px;
+				border: 2px solid var(--ink);
+				border-radius: 4px;
+				color: var(--ink);
+				background: var(--gold);
+				box-shadow: 3px 3px 0 var(--ink);
+				font: inherit;
+				font-size: 13px;
+				font-weight: 900;
+				letter-spacing: 0.5px;
+				text-transform: uppercase;
+				cursor: pointer;
+				transition: transform 120ms ease, box-shadow 120ms ease;
+			}
+
+			button:hover {
+				transform: translate(1px, 1px);
+				box-shadow: 2px 2px 0 var(--ink);
+			}
+
+			button:active {
+				transform: translate(3px, 3px);
+				box-shadow: none;
+			}
+
+			button:focus-visible {
+				outline: 3px solid var(--blue);
+				outline-offset: 4px;
+			}
+
+			.scoreboard {
+				display: grid;
+				grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr;
+				align-items: stretch;
+				overflow: hidden;
+				margin-bottom: 12px;
+				border: 2px solid var(--ink);
+				border-radius: 5px;
+				color: #f3f4e9;
+				background: var(--deep);
+				box-shadow: 4px 4px 0 rgba(23, 36, 31, 0.2);
+			}
+
+			.score-slot {
+				display: flex;
+				min-width: 0;
+				min-height: 70px;
+				flex-direction: column;
+				justify-content: center;
+				gap: 5px;
+				padding: 10px 16px;
+				border-right: 1px solid rgba(239, 242, 223, 0.18);
+			}
+
+			.score-slot:last-child {
+				border-right: 0;
+			}
+
+			.slot-label {
+				color: #afc0b2;
+				font-size: 10px;
+				font-weight: 900;
+				letter-spacing: 1.5px;
+				text-transform: uppercase;
+			}
+
+			.slot-value {
+				overflow: hidden;
+				font-family: Georgia, "Times New Roman", serif;
+				font-size: 19px;
+				font-weight: 700;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.player-slot {
+				flex-direction: row;
+				align-items: center;
+				justify-content: flex-start;
+				gap: 11px;
+			}
+
+			.player-dot {
+				width: 15px;
+				height: 15px;
+				flex: 0 0 15px;
+				border: 2px solid #f4f2e8;
+				border-radius: 50%;
+			}
+
+			.player-dot.blue {
+				background: var(--blue);
+			}
+
+			.player-dot.red {
+				background: var(--red);
+			}
+
+			.player-copy {
+				min-width: 0;
+			}
+
+			.player-state {
+				display: block;
+				min-height: 14px;
+				color: #bac9bd;
+				font-size: 10px;
+				font-weight: 900;
+				letter-spacing: 1px;
+			}
+
+			.player-state.is-it {
+				color: var(--gold);
+			}
+
+			.timer-slot {
+				align-items: center;
+				background: rgba(0, 0, 0, 0.16);
+				text-align: center;
+			}
+
+			.timer-value {
+				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+				font-size: 27px;
+				font-variant-numeric: tabular-nums;
+				line-height: 1;
+			}
+
+			.arena {
+				overflow: hidden;
+				border: 3px solid var(--ink);
+				border-radius: 5px;
+				background: #214b3b;
+				box-shadow: 6px 6px 0 var(--ink);
+			}
+
+			canvas {
+				display: block;
+				width: 100%;
+				height: auto;
+				aspect-ratio: 1000 / 620;
+				touch-action: none;
+			}
+
+			.control-strip {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				gap: 18px;
+				padding: 16px 4px 0;
+			}
+
+			.controls {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 22px;
+			}
+
+			.control-set {
+				display: flex;
+				align-items: center;
+				gap: 9px;
+				color: var(--muted);
+				font-size: 12px;
+				font-weight: 900;
+				text-transform: uppercase;
+			}
+
+			.keyset {
+				display: inline-flex;
+				gap: 3px;
+			}
+
+			kbd {
+				display: inline-grid;
+				min-width: 23px;
+				height: 23px;
+				place-items: center;
+				padding: 0 5px;
+				border: 1px solid #9aa99c;
+				border-radius: 3px;
+				color: var(--ink);
+				background: #f7f8f1;
+				box-shadow: 0 2px 0 #aab6a9;
+				font: 800 11px "Trebuchet MS", "Segoe UI", sans-serif;
+			}
+
+			.blue-label {
+				color: #1472ce;
+			}
+
+			.red-label {
+				color: #c94a40;
+			}
+
+			.tag-hint {
+				color: var(--muted);
+				font-size: 12px;
+				font-weight: 700;
+				text-align: right;
+			}
+
+			@keyframes arrive {
+				from { opacity: 0; transform: translateY(8px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+
+			@media (max-width: 700px) {
+				body {
+					padding: 14px 10px 20px;
+				}
+
+				.scoreboard {
+					grid-template-columns: 1fr 1fr 0.9fr;
+				}
+
+				.score-slot {
+					min-height: 62px;
+					padding: 8px 10px;
+				}
+
+				.score-slot:nth-child(2) {
+					border-right: 0;
+				}
+
+				.score-slot:nth-child(3) {
+					grid-column: 1 / -1;
+					grid-row: 2;
+					min-height: 58px;
+					border-top: 1px solid rgba(239, 242, 223, 0.18);
+					border-right: 0;
+				}
+
+				.score-slot:nth-child(4) {
+					grid-column: 1;
+					grid-row: 3;
+					border-top: 1px solid rgba(239, 242, 223, 0.18);
+				}
+
+				.score-slot:nth-child(5) {
+					grid-column: 2;
+					grid-row: 3;
+					border-top: 1px solid rgba(239, 242, 223, 0.18);
+					border-right: 0;
+				}
+
+				.control-strip {
+					align-items: flex-start;
+					flex-direction: column;
+					gap: 12px;
+				}
+
+				.tag-hint {
+					text-align: left;
+				}
+			}
+
+			@media (max-width: 420px) {
+				h1 {
+					font-size: 22px;
+				}
+
+				.round-label {
+					font-size: 9px;
+				}
+
+				.controls {
+					gap: 12px;
+				}
+
+				.control-set {
+					gap: 6px;
+					font-size: 10px;
+				}
+
+				.score-slot {
+					padding: 7px;
+				}
+
+				.slot-value {
+					font-size: 16px;
+				}
+
+				.timer-value {
+					font-size: 25px;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				*, *::before, *::after {
+					animation-duration: 0.01ms !important;
+					transition-duration: 0.01ms !important;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<main class="game">
+			<header class="masthead">
+				<div class="brand">
+					<span class="brand-mark" aria-hidden="true"></span>
+					<div>
+						<h1>Tag Arena</h1>
+						<div class="round-label">Local two-player match</div>
+					</div>
+				</div>
+				<button id="restartButton" type="button" aria-label="Start a new round">New round</button>
+			</header>
+
+			<section class="scoreboard" aria-label="Match scoreboard" aria-live="polite">
+				<div class="score-slot player-slot">
+					<span class="player-dot blue" aria-hidden="true"></span>
+					<div class="player-copy">
+						<span class="slot-label">Blue</span>
+						<span id="blueState" class="player-state">SAFE</span>
+					</div>
+				</div>
+				<div class="score-slot player-slot">
+					<span class="player-dot red" aria-hidden="true"></span>
+					<div class="player-copy">
+						<span class="slot-label">Red</span>
+						<span id="redState" class="player-state">SAFE</span>
+					</div>
+				</div>
+				<div class="score-slot timer-slot">
+					<span class="slot-label">Time left</span>
+					<span id="timer" class="timer-value">2:00</span>
+				</div>
+				<div class="score-slot">
+					<span class="slot-label">Blue tagged</span>
+					<span id="blueTags" class="slot-value">0</span>
+				</div>
+				<div class="score-slot">
+					<span class="slot-label">Red tagged</span>
+					<span id="redTags" class="slot-value">0</span>
+				</div>
+			</section>
+
+			<section class="arena" aria-label="Tag Arena playfield">
+				<canvas id="arena" width="1000" height="620" aria-label="Platform tag game. Blue uses WASD, Red uses the arrow keys."></canvas>
+			</section>
+
+			<footer class="control-strip">
+				<div class="controls" aria-label="Player controls">
+					<div class="control-set blue-label">
+						<span>Blue</span>
+						<span class="keyset" aria-label="W A S D">
+							<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+						</span>
+					</div>
+					<div class="control-set red-label">
+						<span>Red</span>
+						<span class="keyset" aria-label="Arrow keys">
+							<kbd>&uarr;</kbd><kbd>&larr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd>
+						</span>
+					</div>
+				</div>
+				<div id="roundMessage" class="tag-hint">Pass the tag before the clock runs out.</div>
+			</footer>
+		</main>
+
+		<script>
+			const canvas = document.getElementById('arena');
+			const ctx = canvas.getContext('2d');
+			const timerEl = document.getElementById('timer');
+			const blueStateEl = document.getElementById('blueState');
+			const redStateEl = document.getElementById('redState');
+			const blueTagsEl = document.getElementById('blueTags');
+			const redTagsEl = document.getElementById('redTags');
+			const roundMessageEl = document.getElementById('roundMessage');
+			const restartButton = document.getElementById('restartButton');
+
+			const WIDTH = canvas.width;
+			const HEIGHT = canvas.height;
+			const ROUND_SECONDS = 120;
+			const GRAVITY = 1450;
+			const JUMP_SPEED = 600;
+			const platforms = [
+				{ x: 0, y: 570, w: WIDTH, h: 50, kind: 'floor' },
+				{ x: 72, y: 460, w: 245, h: 18 },
+				{ x: 380, y: 385, w: 230, h: 18 },
+				{ x: 690, y: 460, w: 235, h: 18 },
+				{ x: 145, y: 340, w: 210, h: 18 },
+				{ x: 410, y: 305, w: 190, h: 18 },
+				{ x: 735, y: 350, w: 175, h: 18 },
+			];
+			const keys = new Set();
+			let players;
+			let round;
+			let lastFrame = 0;
+			let tagFlash = 0;
+
+			function makePlayer(color, x, controls) {
+				return {
+					color,
+					x,
+					y: 534,
+					w: 28,
+					h: 36,
+					vx: 0,
+					vy: 0,
+					speed: 255,
+					onGround: true,
+					jumpQueued: false,
+					controls,
+					tags: 0,
+				};
+			}
+
+			function startRound() {
+				keys.clear();
+				players = {
+					blue: makePlayer('#3695f4', 120, { left: 'a', right: 'd', jump: 'w', down: 's' }),
+					red: makePlayer('#ef6258', 852, { left: 'arrowleft', right: 'arrowright', jump: 'arrowup', down: 'arrowdown' }),
+				};
+				round = {
+					timeLeft: ROUND_SECONDS,
+					it: Math.random() < 0.5 ? 'blue' : 'red',
+					contactLocked: false,
+					finished: false,
+					winner: null,
+				};
+				tagFlash = 0;
+				roundMessageEl.textContent = 'Pass the tag before the clock runs out.';
+				updateHud();
+			}
+
+			function updateHud() {
+				const seconds = Math.max(0, Math.ceil(round.timeLeft));
+				const minutes = Math.floor(seconds / 60);
+				const remainder = String(seconds % 60).padStart(2, '0');
+				timerEl.textContent = `${minutes}:${remainder}`;
+				blueTagsEl.textContent = String(players.blue.tags);
+				redTagsEl.textContent = String(players.red.tags);
+				blueStateEl.textContent = round.it === 'blue' ? 'IT' : 'SAFE';
+				redStateEl.textContent = round.it === 'red' ? 'IT' : 'SAFE';
+				blueStateEl.classList.toggle('is-it', round.it === 'blue');
+				redStateEl.classList.toggle('is-it', round.it === 'red');
+
+				if (round.finished) {
+					const winnerName = round.winner === 'blue' ? 'Blue' : 'Red';
+					roundMessageEl.textContent = `${winnerName} outlasted the tag.`;
+				}
+			}
+
+			function movePlayer(player, dt) {
+				const left = keys.has(player.controls.left);
+				const right = keys.has(player.controls.right);
+				const dropping = keys.has(player.controls.down);
+				const direction = Number(right) - Number(left);
+
+				player.vx = direction * player.speed;
+				player.x = Math.max(0, Math.min(WIDTH - player.w, player.x + player.vx * dt));
+
+				if (player.jumpQueued && player.onGround && !round.finished) {
+					player.vy = -JUMP_SPEED;
+					player.onGround = false;
+					player.jumpQueued = false;
+				}
+
+				const previousBottom = player.y + player.h;
+				player.vy += GRAVITY * dt;
+				player.y += player.vy * dt;
+				player.onGround = false;
+
+				for (const platform of platforms) {
+					if (dropping && platform.kind !== 'floor') continue;
+					const horizontalOverlap = player.x < platform.x + platform.w &&
+						player.x + player.w > platform.x;
+					const crossedTop = previousBottom <= platform.y &&
+						player.y + player.h >= platform.y && player.vy >= 0;
+
+					if (horizontalOverlap && crossedTop) {
+						player.y = platform.y - player.h;
+						player.vy = 0;
+						player.onGround = true;
+					}
+				}
+			}
+
+			function checkTag() {
+				const blue = players.blue;
+				const red = players.red;
+				const touching = blue.x < red.x + red.w &&
+					blue.x + blue.w > red.x &&
+					blue.y < red.y + red.h &&
+					blue.y + blue.h > red.y;
+
+				if (!touching) {
+					round.contactLocked = false;
+					return;
+				}
+
+				if (round.contactLocked) return;
+
+				round.it = round.it === 'blue' ? 'red' : 'blue';
+				players[round.it].tags += 1;
+				round.contactLocked = true;
+				tagFlash = 0.22;
+				updateHud();
+			}
+
+			function update(dt) {
+				if (round.finished) return;
+
+				round.timeLeft = Math.max(0, round.timeLeft - dt);
+				movePlayer(players.blue, dt);
+				movePlayer(players.red, dt);
+				checkTag();
+				tagFlash = Math.max(0, tagFlash - dt);
+
+				if (round.timeLeft === 0) {
+					round.finished = true;
+					round.winner = round.it === 'blue' ? 'red' : 'blue';
+					updateHud();
+				}
+			}
+
+			function drawBackdrop() {
+				const background = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+				background.addColorStop(0, '#2b5c47');
+				background.addColorStop(1, '#18392f');
+				ctx.fillStyle = background;
+				ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+				ctx.fillStyle = 'rgba(225, 240, 211, 0.055)';
+				for (let x = 22; x < WIDTH; x += 40) {
+					ctx.fillRect(x, 0, 1, 570);
+				}
+				for (let y = 22; y < 570; y += 40) {
+					ctx.fillRect(0, y, WIDTH, 1);
+				}
+
+				ctx.fillStyle = 'rgba(12, 32, 26, 0.22)';
+				ctx.fillRect(0, 0, WIDTH, 10);
+				ctx.fillRect(0, 0, 10, HEIGHT);
+				ctx.fillRect(WIDTH - 10, 0, 10, HEIGHT);
+
+				ctx.strokeStyle = 'rgba(244, 200, 92, 0.24)';
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.arc(500, 530, 72, Math.PI, Math.PI * 2);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(500, 458);
+				ctx.lineTo(500, 570);
+				ctx.stroke();
+
+				for (const postX of [40, 960]) {
+					ctx.fillStyle = 'rgba(10, 31, 25, 0.26)';
+					ctx.fillRect(postX - 8, 110, 16, 310);
+					ctx.fillStyle = 'rgba(244, 200, 92, 0.2)';
+					ctx.fillRect(postX - 2, 110, 4, 310);
+				}
+			}
+
+			function drawPlatforms() {
+				for (const platform of platforms) {
+					if (platform.kind === 'floor') {
+						ctx.fillStyle = '#142d26';
+						ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+						ctx.fillStyle = '#d29c4c';
+						ctx.fillRect(platform.x, platform.y, platform.w, 5);
+						ctx.fillStyle = 'rgba(235, 231, 197, 0.09)';
+						for (let x = 12; x < WIDTH; x += 36) {
+							ctx.fillRect(x, platform.y + 15, 18, 2);
+						}
+						continue;
+					}
+
+					ctx.fillStyle = 'rgba(9, 27, 22, 0.38)';
+					ctx.fillRect(platform.x + 5, platform.y + 7, platform.w, platform.h);
+					ctx.fillStyle = '#254a3a';
+					ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+					ctx.fillStyle = '#e5b854';
+					ctx.fillRect(platform.x, platform.y, platform.w, 4);
+					ctx.fillStyle = 'rgba(226, 239, 216, 0.24)';
+					ctx.fillRect(platform.x + 7, platform.y + 8, platform.w - 14, 1);
+					ctx.fillStyle = '#122e26';
+					for (let x = platform.x + 13; x < platform.x + platform.w - 8; x += 28) {
+						ctx.fillRect(x, platform.y + 11, 3, 3);
+					}
+				}
+			}
+
+			function drawPlayer(player, name) {
+				const centerX = player.x + player.w / 2;
+				const headY = player.y + 8;
+				const bodyY = player.y + 18;
+				const it = round.it === name;
+
+				if (it) {
+					const bob = Math.sin(performance.now() / 110) * 2;
+					ctx.fillStyle = '#f4c85c';
+					ctx.beginPath();
+					ctx.moveTo(centerX, player.y - 13 + bob);
+					ctx.lineTo(centerX - 9, player.y - 25 + bob);
+					ctx.lineTo(centerX - 3, player.y - 24 + bob);
+					ctx.lineTo(centerX, player.y - 32 + bob);
+					ctx.lineTo(centerX + 3, player.y - 24 + bob);
+					ctx.lineTo(centerX + 9, player.y - 25 + bob);
+					ctx.closePath();
+					ctx.fill();
+					ctx.strokeStyle = '#183027';
+					ctx.lineWidth = 2;
+					ctx.stroke();
+				}
+
+				ctx.fillStyle = 'rgba(8, 24, 20, 0.35)';
+				ctx.beginPath();
+				ctx.ellipse(centerX, player.y + player.h + 3, 17, 5, 0, 0, Math.PI * 2);
+				ctx.fill();
+
+				ctx.fillStyle = '#17251f';
+				ctx.fillRect(player.x + 4, bodyY + 10, 8, 8);
+				ctx.fillRect(player.x + 16, bodyY + 10, 8, 8);
+				ctx.fillStyle = player.color;
+				ctx.fillRect(player.x + 2, bodyY - 2, player.w - 4, 16);
+				ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+				ctx.fillRect(player.x + 5, bodyY, 3, 10);
+
+				ctx.fillStyle = '#f2d1aa';
+				ctx.beginPath();
+				ctx.arc(centerX, headY, 8, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#202b25';
+				ctx.fillRect(centerX - 8, headY - 7, 16, 4);
+				ctx.fillRect(centerX - 6, headY - 11, 12, 4);
+				ctx.fillStyle = '#19231f';
+				ctx.fillRect(centerX + (name === 'blue' ? 2 : -4), headY - 1, 2, 2);
+
+				ctx.fillStyle = '#fff4db';
+				ctx.font = 'bold 9px "Trebuchet MS", sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(name === 'blue' ? 'B' : 'R', centerX, bodyY + 6);
+			}
+
+			function drawTagFlash() {
+				if (tagFlash <= 0) return;
+				const taggedPlayer = players[round.it];
+				const x = taggedPlayer.x + taggedPlayer.w / 2;
+				const y = taggedPlayer.y + taggedPlayer.h / 2;
+				const radius = 22 + (0.22 - tagFlash) * 95;
+				ctx.strokeStyle = `rgba(244, 200, 92, ${tagFlash / 0.22})`;
+				ctx.lineWidth = 4;
+				ctx.beginPath();
+				ctx.arc(x, y, radius, 0, Math.PI * 2);
+				ctx.stroke();
+			}
+
+			function drawFinish() {
+				if (!round.finished) return;
+
+				ctx.fillStyle = 'rgba(9, 24, 19, 0.72)';
+				ctx.fillRect(0, 0, WIDTH, HEIGHT);
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillStyle = '#f3f0df';
+				ctx.font = 'bold 46px Georgia, serif';
+				ctx.fillText(`${round.winner.toUpperCase()} OUTLASTS`, WIDTH / 2, HEIGHT / 2 - 12);
+				ctx.fillStyle = '#f4c85c';
+				ctx.font = 'bold 16px "Trebuchet MS", sans-serif';
+				ctx.fillText('NEW ROUND', WIDTH / 2, HEIGHT / 2 + 31);
+			}
+
+			function render() {
+				drawBackdrop();
+				drawPlatforms();
+				drawPlayer(players.blue, 'blue');
+				drawPlayer(players.red, 'red');
+				drawTagFlash();
+				drawFinish();
+			}
+
+			function frame(now) {
+				const dt = Math.min((now - lastFrame) / 1000 || 0, 0.034);
+				lastFrame = now;
+				update(dt);
+				render();
+				requestAnimationFrame(frame);
+			}
+
+			document.addEventListener('keydown', (event) => {
+				const key = event.key.toLowerCase();
+				const jumpKey = key === 'w' || key === 'arrowup';
+				const knownKey = ['w', 'a', 's', 'd', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key);
+
+				if (!knownKey) return;
+				event.preventDefault();
+
+				if (!keys.has(key) && jumpKey) {
+					const player = key === 'w' ? players.blue : players.red;
+					player.jumpQueued = true;
+				}
+				keys.add(key);
+			});
+
+			document.addEventListener('keyup', (event) => {
+				keys.delete(event.key.toLowerCase());
+			});
+
+			window.addEventListener('blur', () => keys.clear());
+			restartButton.addEventListener('click', startRound);
+
+			startRound();
+			requestAnimationFrame((now) => {
+				lastFrame = now;
+				requestAnimationFrame(frame);
+			});
+		</script>
+	</body>
+</html>

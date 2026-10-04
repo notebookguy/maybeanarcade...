@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shadow Chase</title>
+    <style>
+      :root {
+        --bg: #10281e;
+        --panel: rgba(13, 35, 25, 0.92);
+        --accent: #e1bb59;
+        --danger: #ff5d73;
+        --good: #7be495;
+        --text: #f4f0df;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #315c42, #10251c 58%);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .game-shell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .hud {
+        width: min(960px, 94vw);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background: var(--panel);
+        border: 2px solid rgba(225, 187, 89, 0.42);
+        border-radius: 12px;
+        padding: 12px 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        font-size: 0.95rem;
+      }
+
+      .hud strong {
+        color: var(--accent);
+      }
+
+      canvas {
+        display: block;
+        width: min(960px, 94vw);
+        height: auto;
+        background: linear-gradient(#2a8f6d, #173d2e);
+        border: 3px solid #b38c43;
+        border-radius: 16px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #041621;
+        background: linear-gradient(135deg, #ffd166, #f4d35e);
+        cursor: pointer;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      button:hover {
+        filter: brightness(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-shell">
+      <div class="hud">
+        <div><strong>Coins:</strong> <span id="coinCount">0</span></div>
+        <div><strong>Score:</strong> <span id="scoreValue">0</span></div>
+        <div><strong>Multiplier:</strong> <span id="multiplierValue">1x</span></div>
+        <div><strong>Clones:</strong> <span id="cloneCount">0</span></div>
+        <div><strong>Status:</strong> <span id="statusText">Running</span></div>
+        <div class="controls">
+          <button id="restartBtn" type="button">Restart</button>
+        </div>
+      </div>
+      <canvas id="gameCanvas" width="960" height="600"></canvas>
+    </div>
+
+    <script>
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const coinCountEl = document.getElementById('coinCount');
+      const scoreValueEl = document.getElementById('scoreValue');
+      const multiplierValueEl = document.getElementById('multiplierValue');
+      const cloneCountEl = document.getElementById('cloneCount');
+      const statusTextEl = document.getElementById('statusText');
+      const restartBtn = document.getElementById('restartBtn');
+
+      const WIN_GOAL = 1000;
+      const COINS_PER_SHADOW = 5;
+      const COINS_PER_PIGGY_BANK = 12;
+      const COINS_TO_ESCAPE_POLICE = 3;
+      const coinRoute = [
+        [120, 532], [220, 532], [320, 532], [420, 532], [520, 532],
+        [620, 532], [720, 532], [820, 532], [900, 532], [110, 480],
+        [220, 480], [320, 420], [440, 420], [540, 360], [680, 360],
+        [790, 290], [880, 290], [650, 210], [760, 210], [160, 532],
+      ];
+      const keys = {};
+      let jumpQueued = false;
+
+      const world = {
+        width: canvas.width,
+        height: canvas.height,
+        gravity: 0.7,
+        state: 'playing',
+        platforms: [],
+        coins: [],
+        piggyBanks: [],
+        nextCoinIndex: 0,
+        shadows: [],
+        playerHistory: [],
+        police: {
+          active: false,
+          x: 0,
+          y: 0,
+          radius: 16,
+          speed: 1.8,
+          siren: 0,
+        },
+        swat: {
+          active: false,
+          x: -100,
+          y: -100,
+          speed: 1.2,
+        },
+        stats: {
+          coinsCollected: 0,
+          score: 0,
+          multiplier: 1,
+          piggyBanksCollected: 0,
+          shadowSpawns: 0,
+          policeCoins: 0,
+          escapedPolice: false,
+        },
+      };
+
+      const player = {
+        x: 80,
+        y: 60,
+        w: 22,
+        h: 28,
+        vx: 0,
+        vy: 0,
+        speed: 1.7,
+        jumpPower: 15,
+        onGround: false,
+        facing: 1,
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function getMovementVector() {
+        const currentX = player.x + player.w / 2;
+        const currentY = player.y + player.h / 2;
+        const prev = world.playerHistory[world.playerHistory.length - 2];
+        const last = world.playerHistory[world.playerHistory.length - 1];
+
+        if (!last || !prev) {
+          return { x: player.facing, y: 0 };
+        }
+
+        let dx = last.x - prev.x;
+        let dy = last.y - prev.y;
+        const length = Math.hypot(dx, dy) || 1;
+        dx /= length;
+        dy /= length;
+
+        if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+          return { x: player.facing, y: 0 };
+        }
+
+        return { x: dx, y: dy };
+      }
+
+      function buildPlatforms() {
+        world.platforms = [
+          { x: 0, y: 560, w: 960, h: 40, color: '#4a3728' },
+          { x: 80, y: 490, w: 170, h: 18, color: '#315d43' },
+          { x: 290, y: 430, w: 180, h: 18, color: '#315d43' },
+          { x: 520, y: 370, w: 180, h: 18, color: '#315d43' },
+          { x: 760, y: 300, w: 160, h: 18, color: '#315d43' },
+          { x: 620, y: 220, w: 170, h: 18, color: '#315d43' },
+        ];
+      }
+
+      function addCoin(x, y) {
+        world.coins.push({ x, y, r: 9 });
+      }
+
+      function createCoins() {
+        world.coins = [];
+        world.nextCoinIndex = 0;
+        spawnNextCoin();
+      }
+
+      function createPiggyBanks() {
+        world.piggyBanks = [];
+      }
+
+      function spawnNextCoin() {
+        const [x, y] = coinRoute[world.nextCoinIndex % coinRoute.length];
+        addCoin(x, y);
+        world.nextCoinIndex += 1;
+      }
+
+      function updateHud() {
+        coinCountEl.textContent = String(world.stats.coinsCollected);
+        scoreValueEl.textContent = String(world.stats.score);
+        multiplierValueEl.textContent = `${world.stats.multiplier}x`;
+        cloneCountEl.textContent = String(world.stats.shadowSpawns);
+      }
+
+      function resetGame() {
+        world.state = 'playing';
+        world.stats = {
+          coinsCollected: 0,
+          score: 0,
+          multiplier: 1,
+          piggyBanksCollected: 0,
+          shadowSpawns: 0,
+          policeCoins: 0,
+          escapedPolice: false,
+        };
+        world.playerHistory = [];
+        world.shadows = [];
+        world.police.active = false;
+        world.police.x = -100;
+        world.police.y = -100;
+        world.swat.active = false;
+        world.swat.x = -100;
+        world.swat.y = -100;
+        statusTextEl.textContent = 'Running';
+
+        player.x = 20;
+        player.y = 60;
+        player.vx = 0;
+        player.vy = 0;
+        player.onGround = false;
+        player.facing = 1;
+        jumpQueued = false;
+
+        buildPlatforms();
+        createCoins();
+        createPiggyBanks();
+        updateHud();
+      }
+
+      function spawnShadow() {
+        const delayFrames = 30;
+        const centerX = player.x + player.w / 2;
+        const centerY = player.y + player.h / 2;
+        world.shadows.push({
+          x: centerX,
+          y: centerY,
+          radius: 12,
+          delayFrames,
+        });
+        world.stats.shadowSpawns += 1;
+        updateHud();
+      }
+
+      function lose(message) {
+        if (world.state !== 'playing') return;
+        world.state = 'lost';
+        statusTextEl.textContent = message;
+      }
+
+      function win() {
+        if (world.state !== 'playing') return;
+        world.state = 'won';
+        statusTextEl.textContent = 'You win!';
+      }
+
+      function resolveHorizontalCollisions(prevX) {
+        for (const platform of world.platforms) {
+          const overlap = player.x < platform.x + platform.w &&
+            player.x + player.w > platform.x &&
+            player.y < platform.y + platform.h &&
+            player.y + player.h > platform.y;
+
+          if (!overlap) continue;
+
+          if (prevX + player.w <= platform.x + 4) {
+            player.x = platform.x - player.w;
+          } else if (prevX >= platform.x + platform.w - 4) {
+            player.x = platform.x + platform.w;
+          }
+          player.vx = 0;
+        }
+      }
+
+      function resolveVerticalCollisions(prevY) {
+        player.onGround = false;
+
+        for (const platform of world.platforms) {
+          const overlap = player.x < platform.x + platform.w &&
+            player.x + player.w > platform.x &&
+            player.y < platform.y + platform.h &&
+            player.y + player.h > platform.y;
+
+          if (!overlap) continue;
+
+          if (prevY + player.h <= platform.y + 8 && player.vy >= 0) {
+            player.y = platform.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+          }
+        }
+      }
+
+      function updatePlayer() {
+        const left = keys['arrowleft'] || keys['a'];
+        const right = keys['arrowright'] || keys['d'];
+
+        player.vx = (right ? 1 : 0) - (left ? 1 : 0);
+        player.vx *= player.speed;
+
+        if (right) player.facing = 1;
+        if (left) player.facing = -1;
+
+        if (jumpQueued && player.onGround) {
+          player.vy = -player.jumpPower;
+          player.onGround = false;
+          jumpQueued = false;
+        }
+
+        const prevX = player.x;
+        player.x += player.vx;
+        resolveHorizontalCollisions(prevX);
+
+        player.vy += world.gravity;
+        const prevY = player.y;
+        player.y += player.vy;
+        resolveVerticalCollisions(prevY);
+
+        if (player.y > world.height + 120) {
+          lose('You fell off the map');
+        }
+
+        player.x = clamp(player.x, 0, world.width - player.w);
+      }
+
+      function updateHistory() {
+        world.playerHistory.push({ x: player.x + player.w / 2, y: player.y + player.h / 2 });
+        if (world.playerHistory.length > 180) {
+          world.playerHistory.shift();
+        }
+      }
+
+      function updateShadows() {
+        for (const shadow of world.shadows) {
+          const targetIndex = world.playerHistory.length - 1 - shadow.delayFrames;
+          if (targetIndex < 0) continue;
+
+          const target = world.playerHistory[targetIndex];
+          shadow.x = target.x;
+          shadow.y = target.y;
+
+          const playerCenterX = player.x + player.w / 2;
+          const playerCenterY = player.y + player.h / 2;
+          const currentDistance = Math.hypot(shadow.x - playerCenterX, shadow.y - playerCenterY);
+
+          if (currentDistance < 18 && world.playerHistory.length > shadow.delayFrames) {
+            lose('Touched a shadow');
+          }
+        }
+      }
+
+      function collectCoin(index) {
+        const coin = world.coins[index];
+        if (!coin) return;
+
+        world.coins.splice(index, 1);
+        world.stats.coinsCollected += 1;
+
+        const baseValue = 20;
+        world.stats.score += baseValue * world.stats.multiplier;
+        spawnNextCoin();
+
+        if (world.stats.coinsCollected % COINS_PER_SHADOW === 0) {
+          spawnShadow();
+        }
+
+        if (world.police.active) {
+          world.stats.policeCoins += 1;
+          if (world.stats.policeCoins >= COINS_TO_ESCAPE_POLICE) {
+            world.police.active = false;
+            world.swat.active = false;
+            world.stats.escapedPolice = true;
+            world.stats.policeCoins = 0;
+            statusTextEl.textContent = 'Police escaped';
+          }
+        }
+
+        if (world.stats.coinsCollected % COINS_PER_PIGGY_BANK === 0) {
+          spawnPiggyBank();
+        }
+
+        if (world.stats.coinsCollected >= WIN_GOAL) {
+          win();
+        }
+      }
+
+      function updateCoins() {
+        for (let i = world.coins.length - 1; i >= 0; i -= 1) {
+          const coin = world.coins[i];
+          const playerCenterX = player.x + player.w / 2;
+          const playerCenterY = player.y + player.h / 2;
+          const hit = Math.hypot(playerCenterX - coin.x, playerCenterY - coin.y) < coin.r + 15;
+          if (hit) {
+            collectCoin(i);
+          }
+        }
+      }
+
+      function updatePiggyBanks() {
+        for (let i = world.piggyBanks.length - 1; i >= 0; i -= 1) {
+          const bank = world.piggyBanks[i];
+          const playerCenterX = player.x + player.w / 2;
+          const playerCenterY = player.y + player.h / 2;
+          const hit = Math.hypot(playerCenterX - bank.x, playerCenterY - bank.y) < 24;
+
+          if (hit) {
+            world.piggyBanks.splice(i, 1);
+            world.stats.piggyBanksCollected += 1;
+            world.stats.multiplier = 1 + world.stats.piggyBanksCollected;
+            updateHud();
+            statusTextEl.textContent = `Multiplier ${world.stats.multiplier}x`;
+          }
+        }
+      }
+
+      function spawnPiggyBank() {
+        const [x, y] = coinRoute[world.nextCoinIndex % coinRoute.length];
+        const moveDir = getMovementVector();
+        world.piggyBanks.push({ x, y, w: 20, h: 20, color: '#d3a63d' });
+        world.police.active = true;
+        world.police.x = player.x + player.w / 2 - moveDir.x * 90;
+        world.police.y = player.y + player.h / 2 - moveDir.y * 90;
+        world.police.siren = 0;
+        world.swat.active = true;
+        world.swat.x = clamp(player.x + player.w / 2 + moveDir.y * 70, 12, world.width - 12);
+        world.swat.y = clamp(player.y + player.h / 2 - moveDir.x * 70, 12, world.height - 12);
+        world.stats.policeCoins = 0;
+        world.stats.escapedPolice = false;
+        statusTextEl.textContent = 'Police chase';
+      }
+
+      function updatePolice() {
+        if (!world.police.active) return;
+
+        const police = world.police;
+        const playerCenterX = player.x + player.w / 2;
+        const playerCenterY = player.y + player.h / 2;
+        const swat = world.swat;
+        const moveTowardsPlayer = (unit) => {
+          const dx = playerCenterX - unit.x;
+          const dy = playerCenterY - unit.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          unit.x += (dx / distance) * Math.min(unit.speed, distance);
+          unit.y += (dy / distance) * Math.min(unit.speed, distance);
+        };
+
+        moveTowardsPlayer(police);
+        if (swat.active) moveTowardsPlayer(swat);
+        police.siren += 0.18;
+
+        if (Math.hypot(playerCenterX - police.x, playerCenterY - police.y) < 22 ||
+          (swat.active && Math.hypot(playerCenterX - swat.x, playerCenterY - swat.y) < 22)) {
+          lose('Caught by the police');
+        }
+      }
+
+      function update() {
+        if (world.state !== 'playing') return;
+
+        updatePlayer();
+        updateHistory();
+        updateCoins();
+        updatePiggyBanks();
+        updateShadows();
+        updatePolice();
+        updateHud();
+      }
+
+      function drawBackground() {
+        const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        sky.addColorStop(0, '#315c42');
+        sky.addColorStop(1, '#12291f');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = 'rgba(7, 25, 18, 0.28)';
+        ctx.fillRect(0, 0, canvas.width, 560);
+        ctx.fillStyle = 'rgba(231, 205, 138, 0.08)';
+        for (let x = 24; x < canvas.width; x += 96) {
+          ctx.fillRect(x, 0, 2, 560);
+        }
+        for (let y = 86; y < 520; y += 96) {
+          ctx.fillRect(0, y, canvas.width, 1);
+        }
+
+        ctx.fillStyle = '#173b2b';
+        ctx.fillRect(340, 18, 280, 54);
+        ctx.strokeStyle = '#c8a34f';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(340, 18, 280, 54);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#f0d37c';
+        ctx.font = 'bold 20px Georgia';
+        ctx.fillText('FIRST NATIONAL BANK', 480, 51);
+
+        ctx.fillStyle = '#294c37';
+        ctx.fillRect(46, 104, 176, 152);
+        ctx.strokeStyle = '#b8944b';
+        ctx.lineWidth = 7;
+        ctx.strokeRect(46, 104, 176, 152);
+        ctx.beginPath();
+        ctx.arc(134, 180, 49, 0, Math.PI * 2);
+        ctx.fillStyle = '#647c58';
+        ctx.fill();
+        ctx.strokeStyle = '#d2b45f';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(134, 141);
+        ctx.lineTo(134, 219);
+        ctx.moveTo(95, 180);
+        ctx.lineTo(173, 180);
+        ctx.stroke();
+        ctx.fillStyle = '#e5ca77';
+        ctx.font = 'bold 12px Georgia';
+        ctx.fillText('VAULT', 134, 244);
+
+        ctx.fillStyle = '#4d6544';
+        ctx.fillRect(744, 102, 174, 148);
+        ctx.strokeStyle = '#d0ad58';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(744, 102, 174, 148);
+        ctx.beginPath();
+        ctx.arc(831, 176, 48, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(831, 176, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#d0ad58';
+        ctx.fill();
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+          ctx.beginPath();
+          ctx.arc(831 + Math.cos(angle) * 35, 176 + Math.sin(angle) * 35, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawPlatforms() {
+        for (const platform of world.platforms) {
+          ctx.fillStyle = platform.color;
+          ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+          ctx.fillStyle = '#b9954f';
+          ctx.fillRect(platform.x, platform.y, platform.w, 4);
+          ctx.fillStyle = 'rgba(225, 210, 157, 0.18)';
+          ctx.fillRect(platform.x, platform.y + 5, platform.w, 1);
+        }
+      }
+
+      function drawCoins() {
+        ctx.save();
+        for (const coin of world.coins) {
+          ctx.fillStyle = '#ffd166';
+          ctx.beginPath();
+          ctx.arc(coin.x, coin.y, coin.r, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#76501a';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = 'bold 11px Georgia';
+          ctx.fillText('$', coin.x, coin.y + 0.5);
+          ctx.fillStyle = '#fff0b5';
+          ctx.beginPath();
+          ctx.arc(coin.x, coin.y, coin.r * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawPiggyBanks() {
+        for (const bank of world.piggyBanks) {
+          ctx.fillStyle = '#d7a13d';
+          ctx.beginPath();
+          ctx.ellipse(bank.x, bank.y, 13, 9, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(bank.x + 11, bank.y - 2, 5, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(bank.x - 8, bank.y + 6, 4, 5);
+          ctx.fillRect(bank.x + 4, bank.y + 6, 4, 5);
+          ctx.fillStyle = '#714b22';
+          ctx.fillRect(bank.x - 4, bank.y - 10, 8, 2);
+          ctx.beginPath();
+          ctx.arc(bank.x + 4, bank.y - 2, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawPlayer() {
+        const sackX = player.facing > 0 ? player.x + 15 : player.x - 4;
+        ctx.fillStyle = '#202b23';
+        ctx.fillRect(player.x + 3, player.y + 16, 6, 12);
+        ctx.fillRect(player.x + 14, player.y + 16, 6, 12);
+        ctx.fillStyle = '#35483a';
+        ctx.fillRect(player.x + 2, player.y + 8, 18, 13);
+        ctx.fillStyle = '#d6ba72';
+        ctx.fillRect(player.x + 4, player.y + 3, 14, 9);
+        ctx.fillStyle = '#17231c';
+        ctx.fillRect(player.x + 2, player.y + 6, 18, 4);
+        ctx.fillRect(player.x + 5, player.y, 12, 4);
+        ctx.fillStyle = '#2d704d';
+        ctx.beginPath();
+        ctx.ellipse(sackX, player.y + 19, 7, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f0d37c';
+        ctx.font = 'bold 9px Georgia';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('$', sackX, player.y + 19);
+      }
+
+      function drawShadows() {
+        for (const shadow of world.shadows) {
+          ctx.fillStyle = 'rgba(116, 175, 255, 0.8)';
+          ctx.beginPath();
+          ctx.arc(shadow.x, shadow.y, shadow.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+          ctx.stroke();
+        }
+      }
+
+      function drawPolice() {
+        if (!world.police.active) return;
+
+        const police = world.police;
+        const sirenColor = Math.sin(police.siren) > 0 ? '#ff5d73' : '#42d9c8';
+
+        ctx.fillStyle = '#1b2520';
+        ctx.fillRect(police.x - 19, police.y - 9, 38, 20);
+        ctx.fillStyle = '#e6e4d8';
+        ctx.fillRect(police.x - 10, police.y - 15, 20, 8);
+        ctx.fillStyle = sirenColor;
+        ctx.fillRect(police.x - 5, police.y - 18, 5, 4);
+        ctx.fillRect(police.x + 1, police.y - 18, 5, 4);
+        ctx.fillStyle = '#d2b45f';
+        ctx.fillRect(police.x - 12, police.y - 3, 24, 2);
+        ctx.fillStyle = '#111915';
+        ctx.beginPath();
+        ctx.arc(police.x - 11, police.y + 11, 4, 0, Math.PI * 2);
+        ctx.arc(police.x + 11, police.y + 11, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawSwat() {
+        if (!world.swat.active) return;
+
+        const swat = world.swat;
+        ctx.fillStyle = '#202d2b';
+        ctx.fillRect(swat.x - 8, swat.y - 4, 16, 16);
+        ctx.fillStyle = '#111a19';
+        ctx.fillRect(swat.x - 9, swat.y - 11, 18, 8);
+        ctx.fillStyle = '#d0b66d';
+        ctx.fillRect(swat.x - 3, swat.y - 7, 6, 3);
+        ctx.fillStyle = '#748578';
+        ctx.fillRect(swat.x - 7, swat.y + 12, 5, 9);
+        ctx.fillRect(swat.x + 2, swat.y + 12, 5, 9);
+        ctx.fillStyle = '#c8c7b8';
+        ctx.fillRect(swat.x + 7, swat.y - 2, 7, 12);
+        ctx.fillStyle = '#e5dfc9';
+        ctx.font = 'bold 7px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('SWAT', swat.x, swat.y + 5);
+      }
+
+      function drawOverlay() {
+        if (world.state === 'playing') return;
+
+        ctx.fillStyle = 'rgba(7, 12, 18, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 42px Arial';
+        ctx.fillText(world.state === 'won' ? 'YOU WIN!' : 'YOU LOST!', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.font = '24px Arial';
+        ctx.fillText('Press R or click Restart', canvas.width / 2, canvas.height / 2 + 34);
+      }
+
+      function render() {
+        drawBackground();
+        drawPlatforms();
+        drawCoins();
+        drawPiggyBanks();
+        drawShadows();
+        drawPolice();
+        drawSwat();
+        drawPlayer();
+        drawOverlay();
+      }
+
+      function gameLoop() {
+        update();
+        render();
+        requestAnimationFrame(gameLoop);
+      }
+
+      document.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        keys[key] = true;
+
+        if (event.code === 'Space' || key === 'w' || key === 'arrowup') {
+          jumpQueued = true;
+          event.preventDefault();
+        }
+
+        if (key === 'r') {
+          resetGame();
+        }
+      });
+
+      document.addEventListener('keyup', (event) => {
+        keys[event.key.toLowerCase()] = false;
+      });
+
+      restartBtn.addEventListener('click', resetGame);
+      resetGame();
+      requestAnimationFrame(gameLoop);
+    </script>
+  </body>
+</html>
