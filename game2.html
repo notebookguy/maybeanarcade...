@@ -244,6 +244,11 @@
 				touch-action: none;
 			}
 
+			canvas:focus-visible {
+				outline: 4px solid var(--gold);
+				outline-offset: -8px;
+			}
+
 			.control-strip {
 				display: flex;
 				justify-content: space-between;
@@ -439,7 +444,7 @@
 			</section>
 
 			<section class="arena" aria-label="Tag Arena playfield">
-				<canvas id="arena" width="1000" height="620" aria-label="Platform tag game. Blue uses WASD, Red uses the arrow keys."></canvas>
+				<canvas id="arena" width="1000" height="620" tabindex="0" aria-label="Platform tag game. Blue uses WASD, Red uses the arrow keys."></canvas>
 			</section>
 
 			<footer class="control-strip">
@@ -476,7 +481,7 @@
 			const HEIGHT = canvas.height;
 			const ROUND_SECONDS = 120;
 			const GRAVITY = 1450;
-			const JUMP_SPEED = 600;
+			const JUMP_SPEED = 640;
 			const platforms = [
 				{ x: 0, y: 570, w: WIDTH, h: 50, kind: 'floor' },
 				{ x: 72, y: 460, w: 245, h: 18 },
@@ -491,6 +496,7 @@
 			let round;
 			let lastFrame = 0;
 			let tagFlash = 0;
+			let displayedSecond = -1;
 
 			function makePlayer(color, x, controls) {
 				return {
@@ -531,6 +537,7 @@
 				const seconds = Math.max(0, Math.ceil(round.timeLeft));
 				const minutes = Math.floor(seconds / 60);
 				const remainder = String(seconds % 60).padStart(2, '0');
+				displayedSecond = seconds;
 				timerEl.textContent = `${minutes}:${remainder}`;
 				blueTagsEl.textContent = String(players.blue.tags);
 				redTagsEl.textContent = String(players.red.tags);
@@ -610,6 +617,10 @@
 				movePlayer(players.red, dt);
 				checkTag();
 				tagFlash = Math.max(0, tagFlash - dt);
+
+				if (Math.ceil(round.timeLeft) !== displayedSecond) {
+					updateHud();
+				}
 
 				if (round.timeLeft === 0) {
 					round.finished = true;

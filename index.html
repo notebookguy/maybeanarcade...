@@ -1,28 +1,134 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Arcade</title>
   <style>
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1b2740, #0b0f1a 70%);
+      color: #fff;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      background: #111;
+      padding: 48px 16px;
     }
 
     h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2.2rem, 7vw, 4.5rem);
       color: #00e5ff;
-      font-family: Arial, sans-serif;
-      font-size: clamp(2rem, 8vw, 7rem);
+      text-shadow: 0 0 18px rgba(0, 229, 255, 0.6);
+      letter-spacing: 2px;
       text-align: center;
+    }
+
+    .subtitle {
+      margin: 0 0 40px;
+      color: #8fa3bf;
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .games {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 28px;
+      justify-content: center;
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    .game-card {
+      background: #16203a;
+      border: 1px solid #2a3a5e;
+      border-radius: 16px;
+      padding: 28px 26px 32px;
+      width: 320px;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .game-card:hover {
+      transform: translateY(-6px);
+      border-color: #00e5ff;
+      box-shadow: 0 12px 30px rgba(0, 229, 255, 0.18);
+    }
+
+    .game-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .game-card h2 {
+      margin: 0 0 10px;
+      font-size: 1.5rem;
+    }
+
+    .game-card p {
+      margin: 0 0 24px;
+      color: #a9bcd8;
+      line-height: 1.45;
+      flex-grow: 1;
+    }
+
+    .play-btn {
+      display: inline-block;
+      width: 100%;
+      padding: 16px 0;
+      font-size: 1.25rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      color: #061018;
+      background: linear-gradient(180deg, #36f0ff, #00c8dd);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: filter 0.15s ease, transform 0.1s ease;
+    }
+
+    .play-btn:hover { filter: brightness(1.1); }
+    .play-btn:active { transform: scale(0.97); }
+
+    .tag-card .play-btn {
+      background: linear-gradient(180deg, #ff7a7a, #e0453c);
+      color: #fff;
+    }
+
+    .tag-card:hover {
+      border-color: #ff6b60;
+      box-shadow: 0 12px 30px rgba(255, 107, 96, 0.2);
     }
   </style>
 </head>
 <body>
-  <h1>Hello from my arcade</h1>
+  <h1>MY ARCADE</h1>
+  <p class="subtitle">Pick a game and press play!</p>
+
+  <div class="games">
+    <div class="game-card">
+      <div class="game-icon">🏦</div>
+      <h2>Shadow Heist</h2>
+      <p>Grab coins, dodge the cops, and don't touch your own trailing shadows in this bank-robbing chase.</p>
+      <a class="play-btn" href="game.html">&#9654; PLAY</a>
+    </div>
+
+    <div class="game-card tag-card">
+      <div class="game-icon">🔴</div>
+      <h2>Tag Battle</h2>
+      <p>Two players, one arena, 120 seconds &mdash; chase your friend and tag them before time runs out.</p>
+      <a class="play-btn" href="game2.html">&#9654; PLAY</a>
+    </div>
+  </div>
 </body>
 </html>
