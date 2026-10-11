@@ -69,7 +69,8 @@
         gap: 12px;
       }
 
-      button {
+      button,
+      .menu-btn {
         border: none;
         border-radius: 999px;
         padding: 10px 18px;
@@ -79,9 +80,13 @@
         background: linear-gradient(135deg, #ffd166, #f4d35e);
         cursor: pointer;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
       }
 
-      button:hover {
+      button:hover,
+      .menu-btn:hover {
         filter: brightness(1.05);
       }
     </style>
@@ -96,6 +101,7 @@
         <div><strong>Status:</strong> <span id="statusText">Running</span></div>
         <div class="controls">
           <button id="restartBtn" type="button">Restart</button>
+          <a class="menu-btn" href="index.html">Menu</a>
         </div>
       </div>
       <canvas id="gameCanvas" width="960" height="600"></canvas>

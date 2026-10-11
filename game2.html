@@ -3,19 +3,20 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="theme-color" content="#e7eee4" />
+		<meta name="theme-color" content="#0c0720"/> />
 		<title>Tag Arena</title>
 		<style>
 			:root {
-				color-scheme: light;
-				--ink: #17241f;
-				--deep: #203b30;
-				--muted: #6c7d71;
-				--paper: #e7eee4;
-				--line: #c8d3c8;
-				--blue: #3695f4;
-				--red: #ef6258;
-				--gold: #f4c85c;
+				color-scheme: dark;
+			--ink: #eafcff;
+			--deep: #181033;
+			--muted: #9d92c9;
+			--paper: #0c0720;
+			--line: #33265e;
+			--blue: #35d6ff;
+			--red: #ff5d73;
+			--gold: #ffd23f;
+			--neon: #b96bff;
 			}
 
 			* {
@@ -28,11 +29,11 @@
 				margin: 0;
 				padding: 22px 16px 26px;
 				color: var(--ink);
-				background-color: var(--paper);
-				background-image: linear-gradient(rgba(41, 77, 57, 0.035) 1px, transparent 1px),
-					linear-gradient(90deg, rgba(41, 77, 57, 0.035) 1px, transparent 1px);
-				background-size: 24px 24px;
-				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+			background-color: var(--paper);
+			background-image: linear-gradient(rgba(53, 214, 255, 0.05) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(185, 107, 255, 0.05) 1px, transparent 1px);
+			background-size: 24px 24px;
+			font-family: "Courier New", monospace;
 			}
 
 			.game {
@@ -83,10 +84,13 @@
 			}
 
 			h1 {
-				margin: 0;
-				font-family: Georgia, "Times New Roman", serif;
-				font-size: 26px;
-				line-height: 1;
+			margin: 0;
+			font-family: "Courier New", monospace;
+			font-size: 26px;
+			line-height: 1;
+			text-transform: uppercase;
+			letter-spacing: 2px;
+			text-shadow: 0 0 12px rgba(53, 214, 255, 0.7);
 			}
 
 			.round-label {
@@ -98,7 +102,8 @@
 				text-transform: uppercase;
 			}
 
-			button {
+			button,
+			.menu-btn {
 				min-height: 42px;
 				padding: 0 16px;
 				border: 2px solid var(--ink);
@@ -115,19 +120,36 @@
 				transition: transform 120ms ease, box-shadow 120ms ease;
 			}
 
-			button:hover {
+			.menu-btn {
+				text-decoration: none;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				background: var(--neon);
+				color: #150b2e;
+			}
+
+			button:hover,
+			.menu-btn:hover {
 				transform: translate(1px, 1px);
 				box-shadow: 2px 2px 0 var(--ink);
 			}
 
-			button:active {
+			button:active,
+			.menu-btn:active {
 				transform: translate(3px, 3px);
 				box-shadow: none;
 			}
 
-			button:focus-visible {
+			button:focus-visible,
+			.menu-btn:focus-visible {
 				outline: 3px solid var(--blue);
 				outline-offset: 4px;
+			}
+
+			.masthead-actions {
+				display: flex;
+				gap: 10px;
 			}
 
 			.scoreboard {
@@ -168,7 +190,7 @@
 
 			.slot-value {
 				overflow: hidden;
-				font-family: Georgia, "Times New Roman", serif;
+				font-family: "Courier New", monospace;
 				font-size: 19px;
 				font-weight: 700;
 				text-overflow: ellipsis;
@@ -222,7 +244,7 @@
 			}
 
 			.timer-value {
-				font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+				font-family: "Courier New", monospace;
 				font-size: 27px;
 				font-variant-numeric: tabular-nums;
 				line-height: 1;
@@ -232,7 +254,7 @@
 				overflow: hidden;
 				border: 3px solid var(--ink);
 				border-radius: 5px;
-				background: #214b3b;
+				background: #0a0618;
 				box-shadow: 6px 6px 0 var(--ink);
 			}
 
@@ -411,7 +433,10 @@
 						<div class="round-label">Local two-player match</div>
 					</div>
 				</div>
-				<button id="restartButton" type="button" aria-label="Start a new round">New round</button>
+				<div class="masthead-actions">
+					<button id="restartButton" type="button" aria-label="Start a new round">New round</button>
+					<a class="menu-btn" href="index.html">Menu</a>
+				</div>
 			</header>
 
 			<section class="scoreboard" aria-label="Match scoreboard" aria-live="polite">
@@ -484,12 +509,21 @@
 			const JUMP_SPEED = 640;
 			const platforms = [
 				{ x: 0, y: 570, w: WIDTH, h: 50, kind: 'floor' },
-				{ x: 72, y: 460, w: 245, h: 18 },
-				{ x: 380, y: 385, w: 230, h: 18 },
-				{ x: 690, y: 460, w: 235, h: 18 },
-				{ x: 145, y: 340, w: 210, h: 18 },
-				{ x: 410, y: 305, w: 190, h: 18 },
-				{ x: 735, y: 350, w: 175, h: 18 },
+				{ x: 55, y: 495, w: 120, h: 16 },
+				{ x: 225, y: 505, w: 120, h: 16, dy: -45 },
+				{ x: 395, y: 470, w: 110, h: 16 },
+				{ x: 555, y: 455, w: 120, h: 16, dy: 50 },
+				{ x: 725, y: 495, w: 105, h: 16 },
+				{ x: 870, y: 475, w: 95, h: 16 },
+				{ x: 95, y: 410, w: 115, h: 16, dy: -50 },
+				{ x: 265, y: 370, w: 105, h: 16 },
+				{ x: 425, y: 350, w: 100, h: 16 },
+				{ x: 585, y: 375, w: 110, h: 16, dy: 45 },
+				{ x: 760, y: 400, w: 120, h: 16, dy: -55 },
+				{ x: 170, y: 295, w: 100, h: 16 },
+				{ x: 340, y: 265, w: 105, h: 16 },
+				{ x: 530, y: 255, w: 100, h: 16 },
+				{ x: 700, y: 295, w: 105, h: 16, dy: -40 },
 			];
 			const keys = new Set();
 			let players;
@@ -574,13 +608,29 @@
 
 				for (const platform of platforms) {
 					if (dropping && platform.kind !== 'floor') continue;
+
 					const horizontalOverlap = player.x < platform.x + platform.w &&
 						player.x + player.w > platform.x;
-					const crossedTop = previousBottom <= platform.y &&
-						player.y + player.h >= platform.y && player.vy >= 0;
+					if (!horizontalOverlap) continue;
 
-					if (horizontalOverlap && crossedTop) {
-						player.y = platform.y - player.h;
+					let surfaceY = platform.y;
+					let crossedTop = player.vy >= 0 &&
+						previousBottom <= platform.y &&
+						player.y + player.h >= platform.y;
+
+					if (platform.dy) {
+						const centerX = player.x + player.w / 2;
+						const previousCenterX = centerX - player.vx * dt;
+						const t = Math.max(0, Math.min(1, (centerX - platform.x) / platform.w));
+						const previousT = Math.max(0, Math.min(1, (previousCenterX - platform.x) / platform.w));
+						surfaceY = platform.y + platform.dy * t;
+						const previousSurfaceY = platform.y + platform.dy * previousT;
+						crossedTop = player.y + player.h >= surfaceY &&
+							previousBottom <= previousSurfaceY + 8;
+					}
+
+					if (crossedTop) {
+						player.y = surfaceY - player.h;
 						player.vy = 0;
 						player.onGround = true;
 					}
@@ -631,80 +681,88 @@
 
 			function drawBackdrop() {
 				const background = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-				background.addColorStop(0, '#2b5c47');
-				background.addColorStop(1, '#18392f');
+				background.addColorStop(0, '#1d1140');
+				background.addColorStop(1, '#0a0618');
 				ctx.fillStyle = background;
 				ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-				ctx.fillStyle = 'rgba(225, 240, 211, 0.055)';
-				for (let x = 22; x < WIDTH; x += 40) {
+				ctx.fillStyle = 'rgba(185, 107, 255, 0.55)';
+				for (let i = 0; i < 60; i++) {
+					if (Math.sin(performance.now() / 500 + i) > 0.4) {
+						ctx.fillRect((i * 137) % WIDTH, (i * 89) % 470, 3, 3);
+					}
+				}
+				ctx.fillStyle = 'rgba(53, 214, 255, 0.5)';
+				for (let i = 0; i < 40; i++) {
+					ctx.fillRect((i * 211 + 40) % WIDTH, (i * 149 + 20) % 420, 2, 2);
+				}
+
+				ctx.fillStyle = 'rgba(185, 107, 255, 0.06)';
+				for (let x = 0; x < WIDTH; x += 40) {
 					ctx.fillRect(x, 0, 1, 570);
 				}
-				for (let y = 22; y < 570; y += 40) {
+				for (let y = 80; y < 570; y += 40) {
 					ctx.fillRect(0, y, WIDTH, 1);
 				}
 
-				ctx.fillStyle = 'rgba(12, 32, 26, 0.22)';
-				ctx.fillRect(0, 0, WIDTH, 10);
-				ctx.fillRect(0, 0, 10, HEIGHT);
-				ctx.fillRect(WIDTH - 10, 0, 10, HEIGHT);
-
-				ctx.strokeStyle = 'rgba(244, 200, 92, 0.24)';
-				ctx.lineWidth = 2;
-				ctx.beginPath();
-				ctx.arc(500, 530, 72, Math.PI, Math.PI * 2);
-				ctx.stroke();
-				ctx.beginPath();
-				ctx.moveTo(500, 458);
-				ctx.lineTo(500, 570);
-				ctx.stroke();
-
-				for (const postX of [40, 960]) {
-					ctx.fillStyle = 'rgba(10, 31, 25, 0.26)';
-					ctx.fillRect(postX - 8, 110, 16, 310);
-					ctx.fillStyle = 'rgba(244, 200, 92, 0.2)';
-					ctx.fillRect(postX - 2, 110, 4, 310);
-				}
+				ctx.fillStyle = 'rgba(4, 2, 12, 0.55)';
+				ctx.fillRect(0, 0, WIDTH, 8);
+				ctx.fillRect(0, 0, 8, HEIGHT);
+				ctx.fillRect(WIDTH - 8, 0, 8, HEIGHT);
 			}
 
 			function drawPlatforms() {
-				for (const platform of platforms) {
+				const glows = ['#35d6ff', '#ffd23f', '#ff5d73', '#b96bff'];
+				platforms.forEach((platform, index) => {
 					if (platform.kind === 'floor') {
-						ctx.fillStyle = '#142d26';
+						ctx.fillStyle = '#120a28';
 						ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
-						ctx.fillStyle = '#d29c4c';
-						ctx.fillRect(platform.x, platform.y, platform.w, 5);
-						ctx.fillStyle = 'rgba(235, 231, 197, 0.09)';
-						for (let x = 12; x < WIDTH; x += 36) {
-							ctx.fillRect(x, platform.y + 15, 18, 2);
+						ctx.fillStyle = '#b96bff';
+						ctx.fillRect(platform.x, platform.y, platform.w, 4);
+						ctx.fillStyle = 'rgba(185, 107, 255, 0.18)';
+						for (let x = 8; x < WIDTH; x += 32) {
+							ctx.fillRect(x, platform.y + 14, 12, 3);
 						}
-						continue;
+						return;
 					}
 
-					ctx.fillStyle = 'rgba(9, 27, 22, 0.38)';
-					ctx.fillRect(platform.x + 5, platform.y + 7, platform.w, platform.h);
-					ctx.fillStyle = '#254a3a';
-					ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
-					ctx.fillStyle = '#e5b854';
-					ctx.fillRect(platform.x, platform.y, platform.w, 4);
-					ctx.fillStyle = 'rgba(226, 239, 216, 0.24)';
-					ctx.fillRect(platform.x + 7, platform.y + 8, platform.w - 14, 1);
-					ctx.fillStyle = '#122e26';
-					for (let x = platform.x + 13; x < platform.x + platform.w - 8; x += 28) {
-						ctx.fillRect(x, platform.y + 11, 3, 3);
+					const dy = platform.dy || 0;
+					const glow = glows[(index - 1) % glows.length];
+
+					ctx.fillStyle = '#241746';
+					ctx.beginPath();
+					ctx.moveTo(platform.x, platform.y);
+					ctx.lineTo(platform.x + platform.w, platform.y + dy);
+					ctx.lineTo(platform.x + platform.w, platform.y + dy + platform.h);
+					ctx.lineTo(platform.x, platform.y + platform.h);
+					ctx.closePath();
+					ctx.fill();
+
+					ctx.strokeStyle = glow;
+					ctx.lineWidth = 3;
+					ctx.beginPath();
+					ctx.moveTo(platform.x, platform.y);
+					ctx.lineTo(platform.x + platform.w, platform.y + dy);
+					ctx.stroke();
+
+					ctx.fillStyle = glow;
+					ctx.globalAlpha = 0.55;
+					for (let px = 10; px < platform.w - 6; px += 26) {
+						const studY = platform.y + dy * (px / platform.w) + 7;
+						ctx.fillRect(platform.x + px, studY, 4, 3);
 					}
-				}
+					ctx.globalAlpha = 1;
+				});
 			}
 
 			function drawPlayer(player, name) {
 				const centerX = player.x + player.w / 2;
-				const headY = player.y + 8;
-				const bodyY = player.y + 18;
+				const bodyY = player.y + 16;
 				const it = round.it === name;
 
 				if (it) {
 					const bob = Math.sin(performance.now() / 110) * 2;
-					ctx.fillStyle = '#f4c85c';
+					ctx.fillStyle = '#ffd23f';
 					ctx.beginPath();
 					ctx.moveTo(centerX, player.y - 13 + bob);
 					ctx.lineTo(centerX - 9, player.y - 25 + bob);
@@ -714,36 +772,43 @@
 					ctx.lineTo(centerX + 9, player.y - 25 + bob);
 					ctx.closePath();
 					ctx.fill();
-					ctx.strokeStyle = '#183027';
+					ctx.strokeStyle = '#150b2e';
 					ctx.lineWidth = 2;
 					ctx.stroke();
 				}
 
-				ctx.fillStyle = 'rgba(8, 24, 20, 0.35)';
+				ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
 				ctx.beginPath();
-				ctx.ellipse(centerX, player.y + player.h + 3, 17, 5, 0, 0, Math.PI * 2);
+				ctx.ellipse(centerX, player.y + player.h + 3, 16, 5, 0, 0, Math.PI * 2);
 				ctx.fill();
 
-				ctx.fillStyle = '#17251f';
-				ctx.fillRect(player.x + 4, bodyY + 10, 8, 8);
-				ctx.fillRect(player.x + 16, bodyY + 10, 8, 8);
+				ctx.fillStyle = '#0e0820';
+				ctx.fillRect(player.x + 4, player.y + 28, 8, 8);
+				ctx.fillRect(player.x + 16, player.y + 28, 8, 8);
+
+				ctx.fillStyle = '#0e0820';
+				ctx.fillRect(player.x + 1, bodyY - 3, player.w - 2, 17);
 				ctx.fillStyle = player.color;
-				ctx.fillRect(player.x + 2, bodyY - 2, player.w - 4, 16);
-				ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-				ctx.fillRect(player.x + 5, bodyY, 3, 10);
+				ctx.fillRect(player.x + 3, bodyY - 1, player.w - 6, 13);
+				ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+				ctx.fillRect(player.x + 5, bodyY + 1, 3, 8);
+				ctx.fillStyle = '#0e0820';
+				ctx.fillRect(player.x + 3, bodyY + 10, player.w - 6, 2);
 
-				ctx.fillStyle = '#f2d1aa';
-				ctx.beginPath();
-				ctx.arc(centerX, headY, 8, 0, Math.PI * 2);
-				ctx.fill();
-				ctx.fillStyle = '#202b25';
-				ctx.fillRect(centerX - 8, headY - 7, 16, 4);
-				ctx.fillRect(centerX - 6, headY - 11, 12, 4);
-				ctx.fillStyle = '#19231f';
-				ctx.fillRect(centerX + (name === 'blue' ? 2 : -4), headY - 1, 2, 2);
+				ctx.fillStyle = '#0e0820';
+				ctx.fillRect(centerX - 9, player.y + 2, 18, 12);
+				ctx.fillStyle = player.color;
+				ctx.fillRect(centerX - 7, player.y + 4, 14, 8);
+				ctx.fillStyle = it ? '#ffd23f' : '#eafcff';
+				ctx.fillRect(centerX - 5, player.y + 6, 10, 3);
 
-				ctx.fillStyle = '#fff4db';
-				ctx.font = 'bold 9px "Trebuchet MS", sans-serif';
+				ctx.fillStyle = '#0e0820';
+				ctx.fillRect(centerX - 1, player.y - 3, 2, 5);
+				ctx.fillStyle = it ? '#ffd23f' : player.color;
+				ctx.fillRect(centerX - 2, player.y - 5, 4, 3);
+
+				ctx.fillStyle = '#0e0820';
+				ctx.font = 'bold 9px "Courier New", monospace';
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'middle';
 				ctx.fillText(name === 'blue' ? 'B' : 'R', centerX, bodyY + 6);
@@ -770,10 +835,10 @@
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'middle';
 				ctx.fillStyle = '#f3f0df';
-				ctx.font = 'bold 46px Georgia, serif';
+				ctx.font = 'bold 32px "Courier New", monospace';
 				ctx.fillText(`${round.winner.toUpperCase()} OUTLASTS`, WIDTH / 2, HEIGHT / 2 - 12);
 				ctx.fillStyle = '#f4c85c';
-				ctx.font = 'bold 16px "Trebuchet MS", sans-serif';
+				ctx.font = 'bold 15px "Courier New", monospace';
 				ctx.fillText('NEW ROUND', WIDTH / 2, HEIGHT / 2 + 31);
 			}
 
